@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多益金色證書模擬題庫 - 多益小老師</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+        .quiz-card {
+            transition: all 0.3s ease;
+        }
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateX(8px);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+
+<div id="app" class="max-w-3xl mx-auto px-4 py-8 md:py-12">
+    <!-- Header -->
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-blue-900 mb-2">多益金色證書模擬練習</h1>
+        <p class="text-slate-500">Master your TOEIC skills with your personal tutor.</p>
+    </header>
+
+    <!-- Progress Bar -->
+    <div id="progress-container" class="mb-8 hidden">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-semibold text-blue-700" id="progress-text">Question 1 of 10</span>
+            <span class="text-sm font-semibold text-slate-500" id="timer-text">00:00</span>
+        </div>
+        <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-500"></div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="bg-white rounded-3xl shadow-xl p-8 text-center fade-in">
+        <div class="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        </div>
+        <h2 class="text-2xl font-bold mb-4">準備好開始挑戰了嗎？</h2>
+        <ul class="text-left text-slate-600 mb-8 space-y-3 max-w-xs mx-auto">
+            <li class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span> 共 10 題高頻率模擬題</li>
+            <li class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span> 包含詞彙、語法與閱讀</li>
+            <li class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-3"></span> 即時解析，掌握考點</li>
+        </ul>
+        <button id="start-btn" class="w-full md:w-auto px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-lg hover:shadow-blue-200 transition-all">
+            開始測驗
+        </button>
+    </div>
+
+    <!-- Quiz Area -->
+    <main id="quiz-area" class="hidden">
+        <div id="question-card" class="bg-white rounded-3xl shadow-xl p-6 md:p-8 fade-in">
+            <!-- Question Text -->
+            <div id="question-content" class="mb-8">
+                <p id="question-text" class="text-lg md:text-xl font-semibold leading-relaxed text-slate-800"></p>
+            </div>
+
+            <!-- Options -->
+            <div id="options-grid" class="grid grid-cols-1 gap-4 mb-8">
+                <!-- Options will be injected here -->
+            </div>
+
+            <!-- Feedback Area -->
+            <div id="feedback-area" class="hidden rounded-2xl p-6 mb-8 border-l-8">
+                <div class="flex items-start">
+                    <div id="feedback-icon" class="mr-4 mt-1"></div>
+                    <div>
+                        <h4 id="feedback-title" class="font-bold text-lg mb-1"></h4>
+                        <p id="feedback-rationale" class="text-sm md:text-base opacity-90"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-end">
+                <button id="next-btn" class="hidden px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all">
+                    下一題
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="hidden bg-white rounded-3xl shadow-xl p-8 text-center fade-in">
+        <h2 class="text-3xl font-bold mb-2 text-blue-900">測驗結束！</h2>
+        <p class="text-slate-500 mb-8">你的金色證書之路更進一步了。</p>
+        
+        <div class="inline-block relative mb-8">
+            <svg class="w-40 h-40 transform -rotate-90">
+                <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="10" fill="transparent" class="text-slate-100" />
+                <circle id="score-circle" cx="80" cy="80" r="70" stroke="currentColor" stroke-width="10" fill="transparent" stroke-dasharray="440" stroke-dashoffset="440" class="text-blue-600 transition-all duration-1000" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="final-score" class="text-5xl font-bold text-blue-900">0</span>
+                <span class="text-slate-400 font-semibold">Total Score</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-blue-50 p-4 rounded-2xl">
+                <p class="text-xs text-blue-600 font-bold uppercase mb-1">答對題數</p>
+                <p id="correct-count" class="text-2xl font-bold">0/10</p>
+            </div>
+            <div class="bg-indigo-50 p-4 rounded-2xl">
+                <p class="text-xs text-indigo-600 font-bold uppercase mb-1">正確率</p>
+                <p id="accuracy-percent" class="text-2xl font-bold">0%</p>
+            </div>
+        </div>
+
+        <button onclick="location.reload()" class="w-full py-4 bg-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-200 transition-all mb-4">
+            再考一次
+        </button>
+    </div>
+</div>
+
+<script>
+const quizData = [
+    {
+        question: "The marketing director is looking for a candidate who can work ------- under pressure and meet tight deadlines.",
+        options: ["effectively", "effective", "effect", "effectiveness"],
+        answer: 0,
+        rationale: "此處需要副詞來修飾動詞 work，形容工作的情形或方式。"
+    },
+    {
+        question: "Please be advised that the annual budget report must be submitted to the finance department ------- Friday at 5:00 P.M.",
+        options: ["until", "by", "at", "on"],
+        answer: 1,
+        rationale: "by 用於表示「不遲於」某個時間點，是多益考截止日期時最常出現的介系詞。"
+    },
+    {
+        question: "Mr. Henderson will be available to meet with the clients after he ------- the quarterly sales presentation.",
+        options: ["finished", "finishing", "finishes", "will finish"],
+        answer: 2,
+        rationale: "在表示時間或條件的從句中，要用「現在式代替未來式」。"
+    },
+    {
+        question: "The new software update is ------- to improve the efficiency of the data processing system.",
+        options: ["designed", "designing", "designs", "designer"],
+        answer: 0,
+        rationale: "be designed to 是一個固定搭配，表示「被設計用來...」。"
+    },
+    {
+        question: "Despite the ------- weather conditions, the outdoor corporate event was a huge success.",
+        options: ["adverse", "adversely", "adversity", "advertising"],
+        answer: 0,
+        rationale: "adverse 表示「不利的、惡劣的」，符合 Despite（儘管）的轉折邏輯。"
+    },
+    {
+        question: "The company’s decision to expand into the European market was based on ------- research and analysis.",
+        options: ["extensive", "extended", "extent", "extending"],
+        answer: 0,
+        rationale: "extensive 表示「廣泛的、大量的」，常與 research（研究）搭配使用。"
+    },
+    {
+        question: "Questions 7 refers to the following email:\n\nTo: All Staff\nFrom: Facilities Manager\nSubject: Office Renovation\n\nStarting next Monday, the third-floor office will be closed for renovation. We expect the work to be completed within two weeks. Please make sure to remove all personal items from your desks by this Friday.\n\nQuestion: What are the employees asked to do?",
+        options: ["Finish their reports by Friday", "Clear their workspaces", "Work from home for two weeks", "Attend a meeting about the renovation"],
+        answer: 1,
+        rationale: "文中要求員工 remove all personal items，即為清理辦公桌空間。"
+    },
+    {
+        question: "The research team found that the new chemical compound is highly ------- to heat and moisture.",
+        options: ["resistance", "resistant", "resisted", "resistively"],
+        answer: 1,
+        rationale: "be resistant to 是標準用法，表示對某物具有「抵抗力」或「耐受性」。"
+    },
+    {
+        question: "All travel expenses must be documented and submitted to the accounting office to receive full -------.",
+        options: ["reimbursement", "reimburse", "reimbursed", "reimbursable"],
+        answer: 0,
+        rationale: "reimbursement 指「費用報支、退款」，是多益商務情境的高頻單字。"
+    },
+    {
+        question: "The human resources department has decided to ------- the candidate's interview until next Tuesday due to a scheduling conflict.",
+        options: ["postpone", "cancel", "reject", "propose"],
+        answer: 0,
+        rationale: "postpone 意為「延期」，常用於會議或面試時間更動的情境。"
+    }
+];
+
+let currentQuestionIndex = 0;
+let score = 0;
+let answered = false;
+let timerSeconds = 0;
+let timerInterval;
+
+const startScreen = document.getElementById('start-screen');
+const quizArea = document.getElementById('quiz-area');
+const resultScreen = document.getElementById('result-screen');
+const progressContainer = document.getElementById('progress-container');
+const nextBtn = document.getElementById('next-btn');
+
+function startQuiz() {
+    startScreen.classList.add('hidden');
+    quizArea.classList.remove('hidden');
+    progressContainer.classList.remove('hidden');
+    loadQuestion();
+    startTimer();
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        timerSeconds++;
+        const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const secs = (timerSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('timer-text').textContent = `${mins}:${secs}`;
+    }, 1000);
+}
+
+function loadQuestion() {
+    const data = quizData[currentQuestionIndex];
+    answered = false;
+    nextBtn.classList.add('hidden');
+    document.getElementById('feedback-area').classList.add('hidden');
+    
+    // Update progress
+    const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+    document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+    document.getElementById('progress-text').textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+    
+    // Set Question Text (handling newlines for email question)
+    const qText = document.getElementById('question-text');
+    qText.innerHTML = data.question.replace(/\n/g, '<br>');
+    
+    // Load Options
+    const optionsGrid = document.getElementById('options-grid');
+    optionsGrid.innerHTML = '';
+    
+    data.options.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn w-full p-5 text-left border-2 border-slate-200 rounded-2xl hover:bg-slate-50 font-medium flex items-center justify-between group';
+        btn.innerHTML = `
+            <span class="flex items-center">
+                <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center mr-4 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">${String.fromCharCode(65 + index)}</span>
+                ${option}
+            </span>
+        `;
+        btn.onclick = () => selectOption(index, btn);
+        optionsGrid.appendChild(btn);
+    });
+
+    // Reset Animation
+    const qCard = document.getElementById('question-card');
+    qCard.classList.remove('fade-in');
+    void qCard.offsetWidth; // trigger reflow
+    qCard.classList.add('fade-in');
+}
+
+function selectOption(index, btn) {
+    if (answered) return;
+    answered = true;
+    
+    const data = quizData[currentQuestionIndex];
+    const isCorrect = index === data.answer;
+    const feedbackArea = document.getElementById('feedback-area');
+    const feedbackIcon = document.getElementById('feedback-icon');
+    const feedbackTitle = document.getElementById('feedback-title');
+    const feedbackRationale = document.getElementById('feedback-rationale');
+    
+    // UI Feedback
+    const allButtons = document.querySelectorAll('.option-btn');
+    allButtons.forEach((b, i) => {
+        b.disabled = true;
+        if (i === data.answer) {
+            b.classList.remove('border-slate-200');
+            b.classList.add('border-green-500', 'bg-green-50');
+        } else if (i === index && !isCorrect) {
+            b.classList.remove('border-slate-200');
+            b.classList.add('border-red-500', 'bg-red-50');
+        }
+    });
+
+    if (isCorrect) {
+        score++;
+        feedbackArea.className = 'fade-in rounded-2xl p-6 mb-8 border-l-8 bg-green-50 border-green-500 text-green-900';
+        feedbackIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>`;
+        feedbackTitle.textContent = "答對了！非常優秀。";
+    } else {
+        feedbackArea.className = 'fade-in rounded-2xl p-6 mb-8 border-l-8 bg-red-50 border-red-500 text-red-900';
+        feedbackIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+        feedbackTitle.textContent = `答錯了，正確答案是 (${String.fromCharCode(65 + data.answer)})`;
+    }
+
+    feedbackRationale.textContent = data.rationale;
+    feedbackArea.classList.remove('hidden');
+    nextBtn.classList.remove('hidden');
+
+    if (currentQuestionIndex === quizData.length - 1) {
+        nextBtn.textContent = "查看結果";
+    }
+}
+
+function showResults() {
+    clearInterval(timerInterval);
+    quizArea.classList.add('hidden');
+    progressContainer.classList.add('hidden');
+    resultScreen.classList.remove('hidden');
+    
+    const finalScoreValue = (score / quizData.length) * 100;
+    document.getElementById('final-score').textContent = finalScoreValue;
+    document.getElementById('correct-count').textContent = `${score}/${quizData.length}`;
+    document.getElementById('accuracy-percent').textContent = `${finalScoreValue}%`;
+    
+    // Progress circle animation
+    const circle = document.getElementById('score-circle');
+    const offset = 440 - (440 * finalScoreValue / 100);
+    setTimeout(() => {
+        circle.style.strokeDashoffset = offset;
+    }, 100);
+}
+
+document.getElementById('start-btn').onclick = startQuiz;
+
+nextBtn.onclick = () => {
+    if (currentQuestionIndex < quizData.length - 1) {
+        currentQuestionIndex++;
+        loadQuestion();
+    } else {
+        showResults();
+    }
+};
+
+</script>
+</body>
+</html>
