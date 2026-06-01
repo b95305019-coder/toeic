@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的 AI 每日英文閱讀工具</title>
+    <!-- 引入 CSV 解析函式庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary: #003366;
+            --bg: #f4f7f9;
+            --white: #ffffff;
+            --accent: #27ae60;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            border-bottom: 3px solid var(--primary);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .date-tag {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .article-section {
+            background: #f9f9f9;
+            padding: 25px;
+            border-left: 6px solid var(--primary);
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+
+        #articleEn {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        .translation-toggle {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .translation-toggle:hover { background: #444; }
+
+        #articleZh {
+            display: none;
+            color: #555;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed #ccc;
+            white-space: pre-line;
+        }
+
+        .quiz-section { margin-top: 40px; }
+
+        .quiz-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: 0.2s;
+        }
+
+        .quiz-card:hover { border-color: var(--primary); }
+
+        .question-text {
+            font-weight: bold;
+            font-size: 17px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .option {
+            display: block;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option:hover { background-color: #f0f4f8; }
+
+        .option input { margin-right: 10px; }
+
+        .submit-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover { background-color: #219150; }
+
+        .feedback {
+            margin-top: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+        #status-msg {
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        #score-display {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 30px;
+            color: var(--accent);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>TOEIC Daily Practice</h1>
+        <div id="dateTag" class="date-tag">Loading...</div>
+    </div>
+
+    <div id="status-msg">正在同步雲端資料庫最新內容...</div>
+
+    <div id="content-area" style="display: none;">
+        <h2 id="articleTitle" style="color: var(--primary); margin-top: 0;"></h2>
+        
+        <div class="article-section">
+            <div id="articleEn"></div>
+            <button class="translation-toggle" onclick="toggleTranslation()">顯示 / 隱藏中文翻譯</button>
+            <div id="articleZh"></div>
+        </div>
+
+        <div id="quizArea" class="quiz-section"></div>
+        
+        <button class="submit-btn" onclick="checkAnswers()">提交答案並查看結果</button>
+        <div id="score-display"></div>
+    </div>
+</div>
+
+<script>
+    // 您的 Google Sheet CSV 網址
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzWz-mVKNwOE69ahdiCvZAm5OIp8nG0Hd2CmLyziUzLyoD5WsyXwLC-J7bHrJUda54ymzCw6GZikka/pub?output=csv';
+    
+    let currentData = null;
+
+    // 初始化：抓取資料
+    function fetchData() {
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                // 取得最後一筆有資料的列 (Latest Row)
+                const validRows = results.data.filter(row => row.JSON_Data);
+                if (validRows.length > 0) {
+                    const latestRow = validRows[validRows.length - 1];
+                    parseAndRender(latestRow);
+                } else {
+                    document.getElementById('status-msg').innerText = "資料庫目前沒有內容，請確認 Make.com 是否成功執行。";
+                }
+            },
+            error: function() {
+                document.getElementById('status-msg').innerText = "連線失敗，請檢查網路或 CSV 網址。";
+            }
+        });
+    }
+
+    // 解析 JSON 並渲染畫面
+    function parseAndRender(row) {
+        try {
+            // 清理 Gemini 可能會噴出的 Markdown 語法 (以防萬一)
+            let cleanJson = row.JSON_Data.trim();
+            if (cleanJson.startsWith('```json')) {
+                cleanJson = cleanJson.replace(/```json|```/g, '');
+            }
+
+            currentData = JSON.parse(cleanJson);
+            
+            document.getElementById('status-msg').style.display = 'none';
+            document.getElementById('content-area').style.display = 'block';
+            
+            document.getElementById('dateTag').innerText = row.Date || 'Today';
+            document.getElementById('articleTitle').innerText = currentData.title;
+            document.getElementById('articleEn').innerText = currentData.contentEn;
+            document.getElementById('articleZh').innerText = currentData.contentZh;
+
+            let quizHtml = '';
+            currentData.questions.forEach((q, i) => {
+                quizHtml += `
+                    <div class="quiz-card">
+                        <span class="question-text">${i+1}. ${q.q}</span>
+                        <div class="options">
+                            ${q.options.map((opt, oi) => `
+                                <label class="option">
+                                    <input type="radio" name="q${i}" value="${oi}"> (${String.fromCharCode(65+oi)}) ${opt}
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div id="fb${i}" class="feedback"></div>
+                    </div>
+                `;
+            });
+            document.getElementById('quizArea').innerHTML = quizHtml;
+
+        } catch (e) {
+            console.error("JSON Parsing Error:", e);
+            document.getElementById('status-msg').innerText = "資料解析錯誤，請檢查 Gemini 輸出的格式。";
+        }
+    }
+
+    function toggleTranslation() {
+        const zh = document.getElementById('articleZh');
+        zh.style.display = (zh.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function checkAnswers() {
+        let score = 0;
+        const total = currentData.questions.length;
+
+        currentData.questions.forEach((q, i) => {
+            const selected = document.querySelector(`input[name="q${i}"]:checked`);
+            const fb = document.getElementById('fb'+i);
+            fb.style.display = 'block';
+
+            if (selected) {
+                if (parseInt(selected.value) === q.ans) {
+                    score++;
+                    fb.innerHTML = "✓ 正確";
+                    fb.style.color = "var(--accent)";
+                } else {
+                    fb.innerHTML = `✗ 錯誤。正確答案是 (${String.fromCharCode(65+q.ans)})`;
+                    fb.style.color = "#e74c3c";
+                }
+            } else {
+                fb.innerHTML = `請選擇答案。正確答案是 (${String.fromCharCode(65+q.ans)})`;
+                fb.style.color = "#e74c3c";
+            }
+        });
+
+        const scoreDisplay = document.getElementById('score-display');
+        scoreDisplay.style.display = 'block';
+        scoreDisplay.innerText = `測驗結束！得分：${score} / ${total}`;
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    // 啟動
+    fetchData();
+</script>
+
+</body>
+</html>
