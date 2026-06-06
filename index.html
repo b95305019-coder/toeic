@@ -428,6 +428,18 @@
     document.getElementById('headerDate').textContent =
         today.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
 
+    // JSON_Data 解析函數
+    function parseJsonData(raw) {
+        if (!raw) return null;
+        try {
+            const clean = raw.replace(/```json|```/g, '').trim();
+            return JSON.parse(clean);
+        } catch(e) {
+            console.warn('JSON parse error', e);
+            return null;
+        }
+    }
+
     // 載入資料
     Papa.parse(CSV_URL, {
         download: true,
@@ -435,7 +447,7 @@
         skipEmptyLines: true,
         complete: function(results) {
             allData = results.data
-                .filter(r => r.Title && r.Title.trim())
+                .filter(r => r.JSON_Data && r.JSON_Data.trim())
                 .reverse(); // 最新的在前
 
             renderList();
@@ -457,7 +469,7 @@
             return;
         }
 
-        const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+        const todayStr = today.toISOString().slice(0, 10);
         const todayArticle = allData.find(r => r.Date && r.Date.startsWith(todayStr));
         const pastArticles = allData.filter(r => !r.Date || !r.Date.startsWith(todayStr));
 
@@ -465,10 +477,12 @@
 
         // 今日文章
         if (todayArticle) {
+            const d = parseJsonData(todayArticle.JSON_Data);
+            const title = d ? d.title : '今日文章';
             html += `
                 <div class="today-banner" onclick="openArticle(${allData.indexOf(todayArticle)})">
                     <div class="today-tag">TODAY</div>
-                    <div class="today-title">${todayArticle.Title}</div>
+                    <div class="today-title">${title}</div>
                     <div class="today-meta">${formatDate(todayArticle.Date)}</div>
                     <div class="today-arrow">→</div>
                 </div>`;
@@ -480,11 +494,13 @@
             const icons = ['📰','🌍','💼','🔬','🏥','✈️','🎯','💡','🌱'];
             pastArticles.forEach((item, i) => {
                 const idx = allData.indexOf(item);
+                const d = parseJsonData(item.JSON_Data);
+                const title = d ? d.title : '（無標題）';
                 html += `
                     <div class="list-card" onclick="openArticle(${idx})">
                         <div class="card-icon">${icons[i % icons.length]}</div>
                         <div class="card-content">
-                            <div class="card-title">${item.Title}</div>
+                            <div class="card-title">${title}</div>
                             <div class="card-date">${formatDate(item.Date)}</div>
                         </div>
                         <div class="card-arrow">›</div>
@@ -497,26 +513,22 @@
 
     function openArticle(idx) {
         const item = allData[idx];
-        currentArticle = item;
+        const parsed = parseJsonData(item.JSON_Data);
+        currentArticle = { raw: item, parsed: parsed };
         answered = false;
+
+        const title = parsed ? parsed.title : '';
+        const contentEn = parsed ? (parsed.contentEn || '') : '';
+        const contentZh = parsed ? (parsed.contentZh || '') : '';
+        const questions = parsed && Array.isArray(parsed.questions) ? parsed.questions : [];
 
         // 填入內容
         document.getElementById('tDate').textContent = formatDate(item.Date);
-        document.getElementById('tTitle').textContent = item.Title;
-        document.getElementById('tEn').textContent = item.ContentEn || '';
-        document.getElementById('tZh').textContent = item.ContentZh || '';
+        document.getElementById('tTitle').textContent = title;
+        document.getElementById('tEn').textContent = contentEn;
+        document.getElementById('tZh').textContent = contentZh;
         document.getElementById('tZh').style.display = 'none';
         document.getElementById('toggleBtn').textContent = '🌐 顯示中文翻譯';
-
-        // 解析題目
-        let questions = [];
-        try {
-            let qStr = item.Questions || '';
-            qStr = qStr.replace(/```json|```/g, '').trim();
-            questions = JSON.parse(qStr);
-        } catch(e) {
-            console.warn('Questions parse error', e);
-        }
 
         // 渲染題目
         let qHtml = '';
@@ -575,12 +587,8 @@
         if (answered) return;
         answered = true;
 
-        let questions = [];
-        try {
-            let qStr = currentArticle.Questions || '';
-            qStr = qStr.replace(/```json|```/g, '').trim();
-            questions = JSON.parse(qStr);
-        } catch(e) {}
+        const questions = currentArticle.parsed && Array.isArray(currentArticle.parsed.questions)
+            ? currentArticle.parsed.questions : [];
 
         let correct = 0;
 
