@@ -449,7 +449,7 @@
         skipEmptyLines: true,
         complete: function(results) {
             allData = results.data
-                .filter(r => r.Title && r.Title.trim())
+                .filter(r => r.JSON_Data && r.JSON_Data.trim())
                 .reverse(); // 最新的在前
 
             renderList();
@@ -479,10 +479,12 @@
 
         // 今日文章
         if (todayArticle) {
+            const td = parseJsonData(todayArticle.JSON_Data);
+            const tTitle = td ? td.title : '今日文章';
             html += `
                 <div class="today-banner" onclick="openArticle(${allData.indexOf(todayArticle)})">
                     <div class="today-tag">TODAY</div>
-                    <div class="today-title">${todayArticle.Title || '今日文章'}</div>
+                    <div class="today-title">${tTitle}</div>
                     <div class="today-meta">${formatDate(todayArticle.Date)}</div>
                     <div class="today-arrow">→</div>
                 </div>`;
@@ -494,11 +496,13 @@
             const icons = ['📰','🌍','💼','🔬','🏥','✈️','🎯','💡','🌱'];
             pastArticles.forEach((item, i) => {
                 const idx = allData.indexOf(item);
+                const pd = parseJsonData(item.JSON_Data);
+                const pTitle = pd ? pd.title : '（無標題）';
                 html += `
                     <div class="list-card" onclick="openArticle(${idx})">
                         <div class="card-icon">${icons[i % icons.length]}</div>
                         <div class="card-content">
-                            <div class="card-title">${item.Title || '（無標題）'}</div>
+                            <div class="card-title">${pTitle}</div>
                             <div class="card-date">${formatDate(item.Date)}</div>
                         </div>
                         <div class="card-arrow">›</div>
@@ -514,10 +518,11 @@
         currentArticle = item;
         answered = false;
 
-        const title = item.Title || '';
-        const contentEn = item.ContentEn || '';
-        const contentZh = item.ContentZh || '';
-        const questions = parseQuestions(item.Questions);
+        const parsed = parseJsonData(item.JSON_Data);
+        const title = parsed ? parsed.title : '';
+        const contentEn = parsed ? (parsed.contentEn || '') : '';
+        const contentZh = parsed ? (parsed.contentZh || '') : '';
+        const questions = parsed ? parseQuestions(parsed.questions) : [];
 
         // 填入內容
         document.getElementById('tDate').textContent = formatDate(item.Date);
@@ -584,7 +589,8 @@
         if (answered) return;
         answered = true;
 
-        const questions = parseQuestions(currentArticle.Questions);
+        const parsedCA = parseJsonData(currentArticle.JSON_Data);
+        const questions = parsedCA ? parseQuestions(parsedCA.questions) : [];
 
         let correct = 0;
 
