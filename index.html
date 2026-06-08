@@ -4,606 +4,809 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多益隨身學</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root {
-            --primary: #1a3a5c;
-            --primary-light: #2d5f8a;
-            --accent: #e8a020;
-            --accent-light: #f5c060;
-            --success: #27ae60;
-            --danger: #e74c3c;
-            --bg: #f0f4f8;
-            --card: #ffffff;
-            --text: #1a2b3c;
-            --muted: #6b7c93;
-            --border: #dde3ea;
+            --ink: #0d1117;
+            --ink-2: #1c2430;
+            --ink-3: #2d3748;
+            --rule: #e2e8f0;
+            --muted: #718096;
+            --paper: #fafafa;
+            --white: #ffffff;
+            --gold: #c9a227;
+            --gold-dim: rgba(201,162,39,0.10);
+            --green: #276749;
+            --green-dim: rgba(39,103,73,0.08);
+            --red: #9b2335;
+            --red-dim: rgba(155,35,53,0.07);
+            --blue: #1a3a5c;
+            --radius: 4px;
+            --radius-lg: 8px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: var(--paper);
+            color: var(--ink);
             min-height: 100vh;
             padding-bottom: 80px;
         }
 
-        /* ── Header ── */
+        /* ── HEADER ── */
         header {
-            background: var(--primary);
+            background: var(--ink);
             color: white;
-            padding: 14px 16px;
+            padding: 0 16px;
+            height: 52px;
             display: flex;
             align-items: center;
             gap: 10px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-bottom: 2px solid var(--gold);
         }
 
         .back-btn {
-            background: rgba(255,255,255,0.15);
-            border: none;
-            color: white;
-            padding: 7px 12px;
-            border-radius: 8px;
-            font-size: 15px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.8);
+            padding: 5px 12px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            font-family: 'IBM Plex Mono', monospace;
             cursor: pointer;
             display: none;
-            transition: background 0.2s;
-        }
-        .back-btn:active { background: rgba(255,255,255,0.3); }
-
-        .header-title {
-            flex: 1;
-            font-size: 17px;
-            font-weight: 700;
             letter-spacing: 0.5px;
+            transition: all 0.15s;
         }
+        .back-btn:hover { background: rgba(255,255,255,0.08); color: white; }
 
+        .header-wordmark { flex: 1; display: flex; align-items: baseline; gap: 8px; }
+        .header-logo {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--gold);
+            letter-spacing: 2px;
+        }
+        .header-sub { font-size: 11px; color: rgba(255,255,255,0.35); }
         .header-date {
-            font-size: 12px;
-            opacity: 0.7;
-            text-align: right;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
         }
 
-        /* ── Container ── */
-        .container { padding: 14px; max-width: 680px; margin: 0 auto; }
+        /* ── NAV TABS ── */
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--rule);
+            background: white;
+            position: sticky;
+            top: 52px;
+            z-index: 90;
+        }
+        .nav-tab {
+            flex: 1;
+            padding: 11px 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+        }
+        .nav-tab.active { color: var(--ink); border-bottom-color: var(--gold); }
+        .nav-badge {
+            display: inline-block;
+            background: var(--red);
+            color: white;
+            font-size: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 10px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
 
-        /* ── Loading ── */
+        /* ── CONTAINER ── */
+        .container { padding: 16px; max-width: 680px; margin: 0 auto; }
+
+        /* ── LOADING ── */
         .loading {
             text-align: center;
             padding: 60px 20px;
             color: var(--muted);
-        }
-        .loading-spinner {
-            width: 40px; height: 40px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 16px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ── Today Badge ── */
-        .today-banner {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
-            border-radius: 14px;
-            padding: 18px;
-            margin-bottom: 18px;
-            box-shadow: 0 4px 15px rgba(26,58,92,0.3);
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .today-banner:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(26,58,92,0.2); }
-
-        .today-tag {
-            display: inline-block;
-            background: var(--accent);
-            color: var(--primary);
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 20px;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
-
-        .today-title {
-            font-size: 17px;
-            font-weight: 700;
-            line-height: 1.4;
-            margin-bottom: 8px;
-        }
-
-        .today-meta {
-            font-size: 12px;
-            opacity: 0.75;
-        }
-
-        .today-arrow {
-            float: right;
-            font-size: 20px;
-            margin-top: -28px;
-            opacity: 0.8;
-        }
-
-        /* ── Section Header ── */
-        .section-header {
+            font-family: 'IBM Plex Mono', monospace;
             font-size: 13px;
-            font-weight: 700;
-            color: var(--muted);
             letter-spacing: 1px;
+        }
+        .loading-bar {
+            width: 120px; height: 2px;
+            background: var(--rule);
+            margin: 0 auto 16px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loading-bar::after {
+            content: '';
+            display: block;
+            width: 40%; height: 100%;
+            background: var(--gold);
+            animation: slide 1s ease-in-out infinite alternate;
+        }
+        @keyframes slide { from { transform: translateX(0); } to { transform: translateX(200%); } }
+
+        /* ── PUSH BANNER ── */
+        .push-banner {
+            background: var(--gold-dim);
+            border: 1px solid var(--gold);
+            border-radius: var(--radius-lg);
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .push-banner-icon { font-size: 18px; flex-shrink: 0; }
+        .push-banner-text { flex: 1; line-height: 1.5; color: var(--ink-3); }
+        .push-banner-text b { color: var(--ink); }
+        .push-banner-btn {
+            background: var(--gold);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .push-close {
+            background: none; border: none;
+            color: var(--muted); font-size: 16px;
+            cursor: pointer; padding: 0 4px; flex-shrink: 0;
+        }
+
+        /* ntfy config */
+        .ntfy-config {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .ntfy-config h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+        .ntfy-config p { font-size: 12px; color: var(--muted); margin-bottom: 12px; line-height: 1.7; }
+        .ntfy-config input {
+            width: 100%; padding: 9px 12px;
+            border: 1px solid var(--rule); border-radius: var(--radius);
+            font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+            margin-bottom: 8px; outline: none; transition: border-color 0.15s;
+        }
+        .ntfy-config input:focus { border-color: var(--gold); }
+        .ntfy-row { display: flex; gap: 8px; }
+        .ntfy-save {
+            background: var(--ink); color: white; border: none;
+            border-radius: var(--radius); padding: 9px 16px;
+            font-size: 13px; font-weight: 700; cursor: pointer; flex: 1;
+        }
+        .ntfy-cancel {
+            background: transparent; color: var(--muted);
+            border: 1px solid var(--rule); border-radius: var(--radius);
+            padding: 9px 16px; font-size: 13px; cursor: pointer;
+        }
+
+        /* ── TODAY BANNER ── */
+        .today-banner {
+            background: var(--ink);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: transform 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .today-banner::before {
+            content: ''; position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: var(--gold);
+        }
+        .today-banner:active { transform: scale(0.99); }
+        .today-tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--gold); letter-spacing: 2px;
+            margin-bottom: 10px; display: block;
+        }
+        .today-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px; line-height: 1.4; margin-bottom: 10px;
+        }
+        .today-meta {
+            font-size: 11px; color: rgba(255,255,255,0.4);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .today-arrow {
+            position: absolute; right: 20px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 22px; color: rgba(255,255,255,0.25);
+        }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--muted); letter-spacing: 2px;
             text-transform: uppercase;
             margin: 20px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--rule);
         }
 
-        /* ── List Card ── */
+        /* ── LIST CARD ── */
         .list-card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 13px 14px;
+            margin-bottom: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: transform 0.15s, box-shadow 0.15s;
-            border: 1px solid var(--border);
+            border: 1px solid var(--rule);
+            transition: background 0.12s;
         }
-        .list-card:active { transform: scale(0.98); box-shadow: none; }
-
-        .card-icon {
-            width: 42px; height: 42px;
-            background: var(--bg);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
+        .list-card:hover { background: #f7f7f7; }
+        .list-card:active { background: #f0f0f0; }
+        .card-num {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; font-weight: 600;
+            color: var(--muted); width: 28px;
+            text-align: center; flex-shrink: 0;
         }
-
         .card-content { flex: 1; min-width: 0; }
         .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            line-height: 1.4;
+            font-size: 14px; font-weight: 600; line-height: 1.4;
             overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
         }
-        .card-date { font-size: 11px; color: var(--muted); margin-top: 4px; }
-        .card-arrow { color: var(--border); font-size: 18px; flex-shrink: 0; }
+        .card-date {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; color: var(--muted); margin-top: 4px;
+        }
+        .card-wrong-dot {
+            width: 7px; height: 7px;
+            background: var(--red); border-radius: 50%; flex-shrink: 0;
+        }
+        .card-arrow { color: var(--rule); font-size: 18px; flex-shrink: 0; }
 
-        /* ── Read View ── */
+        /* ── READ VIEW ── */
         #readView { display: none; }
 
-        .article-title {
-            font-family: 'Merriweather', serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary);
-            line-height: 1.4;
+        .article-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--gold); letter-spacing: 2px;
             margin-bottom: 6px;
         }
-
+        .article-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px; font-weight: 700;
+            color: var(--ink); line-height: 1.35; margin-bottom: 6px;
+        }
         .article-date {
-            font-size: 12px;
-            color: var(--muted);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; color: var(--muted);
             margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--rule);
         }
-
         .en-text {
-            font-size: 16px;
-            line-height: 1.85;
-            white-space: pre-line;
-            color: var(--text);
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 12px;
+            font-size: 16px; line-height: 1.9;
+            white-space: pre-line; color: var(--ink-2);
+            background: white;
+            padding: 20px; border-radius: var(--radius-lg);
+            border: 1px solid var(--rule); margin-bottom: 10px;
         }
-
         .toggle-btn {
-            width: 100%;
-            padding: 13px;
-            border: 2px dashed var(--border);
-            border-radius: 10px;
-            background: transparent;
-            color: var(--muted);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 28px;
-            transition: all 0.2s;
+            width: 100%; padding: 11px;
+            border: 1px dashed var(--rule); border-radius: var(--radius);
+            background: transparent; color: var(--muted);
+            font-size: 13px; font-weight: 600;
+            font-family: 'IBM Plex Mono', monospace;
+            cursor: pointer; margin-bottom: 24px;
+            transition: all 0.15s; letter-spacing: 0.3px;
         }
-        .toggle-btn:active { background: var(--bg); }
+        .toggle-btn:hover { background: var(--gold-dim); border-color: var(--gold); color: var(--ink); }
 
         .zh-box {
             display: none;
-            background: #f7f9fb;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px 20px;
-            font-size: 14px;
-            line-height: 1.85;
-            color: var(--muted);
-            white-space: pre-line;
-            margin-bottom: 28px;
+            background: #f9f9f9; border: 1px solid var(--rule);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px; font-size: 14px;
+            line-height: 1.85; color: var(--muted);
+            white-space: pre-line; margin-bottom: 24px;
         }
 
-        /* ── Quiz ── */
+        /* ── QUIZ ── */
         .quiz-header {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--muted); letter-spacing: 2px;
+            text-transform: uppercase;
+            border-top: 1px solid var(--rule);
+            padding-top: 16px; margin-bottom: 12px;
         }
-
         .quiz-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 14px;
+            background: white; border: 1px solid var(--rule);
+            border-radius: var(--radius-lg);
+            padding: 16px; margin-bottom: 12px;
         }
-
         .quiz-q {
-            font-size: 14px;
-            font-weight: 600;
-            line-height: 1.5;
-            margin-bottom: 14px;
-            color: var(--text);
+            font-size: 14px; font-weight: 600;
+            line-height: 1.5; margin-bottom: 12px; color: var(--ink);
         }
-
         .option-label {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            border: 2px solid var(--border);
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-size: 14px;
-            line-height: 1.5;
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 12px; border-radius: var(--radius);
+            border: 1px solid var(--rule); margin-bottom: 6px;
+            cursor: pointer; transition: all 0.12s;
+            font-size: 14px; line-height: 1.5;
         }
-        .option-label:active { background: var(--bg); }
+        .option-label:hover { border-color: var(--ink-3); background: #f9f9f9; }
         .option-label input { display: none; }
-
         .option-letter {
-            width: 24px; height: 24px;
-            background: var(--bg);
-            border-radius: 50%;
+            width: 22px; height: 22px;
+            background: var(--paper); border: 1px solid var(--rule);
+            border-radius: 3px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--muted);
-            flex-shrink: 0;
-            transition: all 0.15s;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; font-weight: 600; color: var(--muted);
+            flex-shrink: 0; margin-top: 1px; transition: all 0.12s;
         }
-
-        .option-label.selected {
-            border-color: var(--primary);
-            background: rgba(26,58,92,0.05);
-        }
-        .option-label.selected .option-letter {
-            background: var(--primary);
-            color: white;
-        }
-
-        .option-label.correct {
-            border-color: var(--success);
-            background: rgba(39,174,96,0.08);
-        }
-        .option-label.correct .option-letter { background: var(--success); color: white; }
-
-        .option-label.wrong {
-            border-color: var(--danger);
-            background: rgba(231,76,60,0.08);
-        }
-        .option-label.wrong .option-letter { background: var(--danger); color: white; }
+        .option-label.selected { border-color: var(--blue); background: rgba(26,58,92,0.04); }
+        .option-label.selected .option-letter { background: var(--blue); border-color: var(--blue); color: white; }
+        .option-label.correct { border-color: var(--green); background: var(--green-dim); }
+        .option-label.correct .option-letter { background: var(--green); border-color: var(--green); color: white; }
+        .option-label.wrong { border-color: var(--red); background: var(--red-dim); }
+        .option-label.wrong .option-letter { background: var(--red); border-color: var(--red); color: white; }
 
         .feedback {
-            font-size: 13px;
-            font-weight: 600;
-            margin-top: 8px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            display: none;
+            font-size: 12px; font-weight: 600;
+            font-family: 'IBM Plex Mono', monospace;
+            margin-top: 8px; padding: 7px 10px;
+            border-radius: var(--radius); display: none;
         }
-        .feedback.correct { color: var(--success); background: rgba(39,174,96,0.1); }
-        .feedback.wrong { color: var(--danger); background: rgba(231,76,60,0.1); }
+        .feedback.correct { color: var(--green); background: var(--green-dim); }
+        .feedback.wrong { color: var(--red); background: var(--red-dim); }
 
-        /* ── Score ── */
+        /* ── SCORE ── */
         .score-card {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
-            border-radius: 14px;
-            padding: 24px;
-            text-align: center;
-            margin: 20px 0;
-            display: none;
+            background: var(--ink); color: white;
+            border-radius: var(--radius-lg);
+            padding: 24px; text-align: center;
+            margin: 20px 0; display: none;
+            position: relative; overflow: hidden;
         }
-        .score-number { font-size: 48px; font-weight: 700; }
-        .score-label { font-size: 14px; opacity: 0.8; margin-top: 4px; }
-        .score-msg { font-size: 16px; font-weight: 600; margin-top: 12px; }
+        .score-card::before {
+            content: ''; position: absolute;
+            top: 0; left: 0; right: 0; height: 2px; background: var(--gold);
+        }
+        .score-number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 52px; font-weight: 600;
+            color: var(--gold); letter-spacing: -2px;
+        }
+        .score-label {
+            font-size: 11px; opacity: 0.45; margin-top: 4px;
+            letter-spacing: 1px; font-family: 'IBM Plex Mono', monospace;
+        }
+        .score-msg { font-size: 15px; font-weight: 600; margin-top: 14px; }
 
-        /* ── Submit Btn ── */
+        /* ── SUBMIT BTN ── */
         .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent);
-            color: var(--primary);
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 8px;
-            letter-spacing: 0.5px;
-            transition: background 0.2s, transform 0.15s;
-            box-shadow: 0 4px 12px rgba(232,160,32,0.35);
+            width: 100%; padding: 14px;
+            background: var(--ink); color: white; border: none;
+            border-radius: var(--radius-lg);
+            font-size: 13px; font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+            cursor: pointer; margin-top: 8px; letter-spacing: 1px;
+            transition: background 0.15s, transform 0.12s;
         }
-        .submit-btn:active { transform: scale(0.98); background: var(--accent-light); }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .submit-btn:hover { background: var(--ink-3); }
+        .submit-btn:active { transform: scale(0.99); }
+        .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* ── Error ── */
+        /* ── ERROR / EMPTY ── */
         .error-box {
-            background: #fff3f3;
-            border: 1px solid #fcc;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            color: var(--danger);
-            font-size: 14px;
+            background: var(--red-dim); border: 1px solid var(--red);
+            border-radius: var(--radius-lg); padding: 20px;
+            text-align: center; color: var(--red); font-size: 14px;
+        }
+        .empty-box {
+            text-align: center; padding: 40px 20px;
+            color: var(--muted); font-size: 13px;
+            font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.5px;
         }
 
-        .empty-box {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--muted);
-            font-size: 14px;
+        /* ── WRONG VIEW ── */
+        #wrongView { display: none; }
+        .wrong-empty {
+            text-align: center; padding: 50px 20px;
+            color: var(--muted); font-size: 13px;
+            font-family: 'IBM Plex Mono', monospace; line-height: 2.2;
         }
+        .wrong-article-group { margin-bottom: 16px; }
+        .wrong-article-label {
+            font-size: 13px; font-weight: 700; color: var(--ink);
+            margin-bottom: 6px; padding: 9px 12px;
+            background: white; border: 1px solid var(--rule);
+            border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .wrong-count {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px; background: var(--red);
+            color: white; padding: 2px 7px; border-radius: 10px;
+        }
+        .wrong-q-card {
+            background: white;
+            border: 1px solid var(--rule);
+            border-left: 3px solid var(--red);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 12px 14px; margin-bottom: 6px;
+            font-size: 13px; cursor: pointer;
+        }
+        .wrong-q-card:hover { background: #fafafa; }
+        .wq-q { font-weight: 600; color: var(--ink); line-height: 1.5; margin-bottom: 6px; }
+        .wq-meta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px; color: var(--muted);
+            display: flex; gap: 14px;
+        }
+        .wq-wrong { color: var(--red); }
+        .wq-right { color: var(--green); }
+
+        .clear-btn {
+            width: 100%; padding: 11px;
+            border: 1px solid var(--red); border-radius: var(--radius);
+            background: transparent; color: var(--red);
+            font-size: 12px; font-weight: 600;
+            font-family: 'IBM Plex Mono', monospace;
+            cursor: pointer; margin-top: 8px; letter-spacing: 0.5px;
+        }
+        .clear-btn:hover { background: var(--red-dim); }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--ink); color: white;
+            padding: 10px 20px; border-radius: var(--radius-lg);
+            font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+            opacity: 0; transition: all 0.25s;
+            pointer-events: none; z-index: 999;
+            border-top: 2px solid var(--gold);
+            white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
 
 <header>
-    <button id="backBtn" class="back-btn" onclick="goBack()">← 返回</button>
-    <div class="header-title">📖 多益隨身學</div>
+    <button id="backBtn" class="back-btn" onclick="goBack()">← BACK</button>
+    <div class="header-wordmark">
+        <div class="header-logo">TOEIC DAILY</div>
+        <div class="header-sub">多益隨身學</div>
+    </div>
     <div class="header-date" id="headerDate"></div>
 </header>
 
-<div class="container" id="main">
+<div class="nav-tabs" id="navTabs">
+    <div class="nav-tab active" onclick="switchTab('list')" id="tabList">文章列表</div>
+    <div class="nav-tab" onclick="switchTab('wrong')" id="tabWrong">錯題本 <span class="nav-badge" id="wrongBadge" style="display:none">0</span></div>
+</div>
+
+<div class="container">
+
+    <!-- 推播設定區 -->
+    <div id="pushBannerWrap" style="display:none">
+        <div class="push-banner" id="pushBanner">
+            <div class="push-banner-icon">🔔</div>
+            <div class="push-banner-text">偵測到新文章！<br><b>設定手機推播</b>，下次即時收到通知</div>
+            <button class="push-banner-btn" onclick="showNtfyConfig()">設定</button>
+            <button class="push-close" onclick="dismissPushBanner()">×</button>
+        </div>
+    </div>
+    <div id="ntfyConfig" style="display:none">
+        <div class="ntfy-config">
+            <h3>📱 手機推播設定（ntfy）</h3>
+            <p>1. 手機安裝 <b>ntfy</b> app（iOS / Android 皆有，免費）<br>
+               2. 在 app 中訂閱一個自訂頻道（例如：<b>toeic_kai_2024</b>）<br>
+               3. 輸入相同名稱儲存，之後有新文章時會自動推播</p>
+            <input type="text" id="ntfyTopic" placeholder="頻道名稱，例如：toeic_kai_2024">
+            <div class="ntfy-row">
+                <button class="ntfy-cancel" onclick="hideNtfyConfig()">取消</button>
+                <button class="ntfy-save" onclick="saveNtfyTopic()">儲存並啟用</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 文章列表 -->
     <div id="listView">
         <div class="loading">
-            <div class="loading-spinner"></div>
-            正在載入文章...
+            <div class="loading-bar"></div>
+            LOADING...
         </div>
     </div>
 
     <!-- 閱讀頁 -->
     <div id="readView">
-        <div class="article-date" id="tDate"></div>
+        <div class="article-label">ARTICLE</div>
         <div class="article-title" id="tTitle"></div>
+        <div class="article-date" id="tDate"></div>
         <div class="en-text" id="tEn"></div>
-        <button class="toggle-btn" id="toggleBtn" onclick="toggleZh()">🌐 顯示中文翻譯</button>
+        <button class="toggle-btn" id="toggleBtn" onclick="toggleZh()">[ SHOW 中文翻譯 ]</button>
         <div class="zh-box" id="tZh"></div>
         <div id="qArea"></div>
         <div class="score-card" id="scoreCard">
             <div class="score-number" id="scoreNum"></div>
-            <div class="score-label">答對題數</div>
+            <div class="score-label">CORRECT / TOTAL</div>
             <div class="score-msg" id="scoreMsg"></div>
         </div>
-        <button class="submit-btn" id="submitBtn" onclick="checkAnswers()">✏️ 提交答案並評分</button>
+        <button class="submit-btn" id="submitBtn" onclick="checkAnswers()">SUBMIT ANSWERS →</button>
+    </div>
+
+    <!-- 錯題本 -->
+    <div id="wrongView">
+        <div id="wrongList"></div>
     </div>
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-    // ★ 請把下面這行換成你的 Google Sheets CSV 匯出網址
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6vOFyYzdLDMdFUwHR-z6LvCdrHDOeTKQEPOl6lCia0SG2Wn6pkSLRJtexSthC8TPOjCl-IWwPHk7O/pub?output=csv';
 
-    let allData = [];
-    let currentArticle = null;
-    let answered = false;
+    let allData = [], currentArticle = null, currentArticleIdx = null, answered = false, currentTab = 'list';
 
-    // 顯示今天日期
+    const LS_WRONG = 'toeic_wrong_v1', LS_SEEN = 'toeic_seen_count', LS_NTFY = 'toeic_ntfy_topic', LS_PUSH_DIS = 'toeic_push_dismissed';
+
+    // ─── Wrong Answer Store ───
+    function loadWrong() { try { return JSON.parse(localStorage.getItem(LS_WRONG) || '{}'); } catch(e) { return {}; } }
+    function saveWrong(d) { localStorage.setItem(LS_WRONG, JSON.stringify(d)); }
+    function recordWrong(articleIdx, articleTitle, qi, qText, options, userAns, correctAns) {
+        const d = loadWrong();
+        d[`${articleIdx}_${qi}`] = { articleIdx, articleTitle, qi, qText, options, userAns, correctAns };
+        saveWrong(d); updateWrongBadge();
+    }
+    function removeWrong(key) { const d = loadWrong(); delete d[key]; saveWrong(d); updateWrongBadge(); }
+    function clearAllWrong() { localStorage.removeItem(LS_WRONG); updateWrongBadge(); }
+    function updateWrongBadge() {
+        const n = Object.keys(loadWrong()).length;
+        const b = document.getElementById('wrongBadge');
+        b.textContent = n; b.style.display = n > 0 ? '' : 'none';
+    }
+
+    // ─── ntfy Push ───
+    function getNtfyTopic() { return localStorage.getItem(LS_NTFY) || ''; }
+    function saveNtfyTopic() {
+        const v = document.getElementById('ntfyTopic').value.trim();
+        if (!v) { showToast('請輸入頻道名稱'); return; }
+        localStorage.setItem(LS_NTFY, v);
+        hideNtfyConfig();
+        document.getElementById('pushBannerWrap').style.display = 'none';
+        showToast('✓ 推播已啟用：' + v);
+    }
+    function showNtfyConfig() {
+        document.getElementById('ntfyTopic').value = getNtfyTopic();
+        document.getElementById('ntfyConfig').style.display = 'block';
+        document.getElementById('pushBanner').style.display = 'none';
+    }
+    function hideNtfyConfig() {
+        document.getElementById('ntfyConfig').style.display = 'none';
+        document.getElementById('pushBanner').style.display = 'flex';
+    }
+    function dismissPushBanner() {
+        localStorage.setItem(LS_PUSH_DIS, '1');
+        document.getElementById('pushBannerWrap').style.display = 'none';
+    }
+    async function sendPush(title) {
+        const topic = getNtfyTopic(); if (!topic) return;
+        try {
+            await fetch(`https://ntfy.sh/${topic}`, {
+                method: 'POST',
+                headers: { 'Title': '多益隨身學', 'Priority': 'default', 'Content-Type': 'text/plain; charset=utf-8' },
+                body: `📖 新文章已更新：${title}`
+            });
+        } catch(e) { console.warn('ntfy failed', e); }
+    }
+
+    // ─── Toast ───
+    function showToast(msg, ms = 2500) {
+        const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), ms);
+    }
+
+    // ─── Tabs ───
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tabList').classList.toggle('active', tab === 'list');
+        document.getElementById('tabWrong').classList.toggle('active', tab === 'wrong');
+        document.getElementById('listView').style.display = tab === 'list' ? 'block' : 'none';
+        document.getElementById('wrongView').style.display = tab === 'wrong' ? 'block' : 'none';
+        document.getElementById('readView').style.display = 'none';
+        document.getElementById('backBtn').style.display = 'none';
+        document.getElementById('navTabs').style.display = 'flex';
+        if (tab === 'wrong') renderWrongList();
+        window.scrollTo(0, 0);
+    }
+
+    // ─── Header date ───
     const today = new Date();
     document.getElementById('headerDate').textContent =
-        today.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
+        today.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
 
-    // JSON_Data 解析函數
+    // ─── Parse helpers ───
     function parseJsonData(raw) {
         if (!raw) return null;
-        try {
-            const clean = raw.replace(/```json|```/g, '').trim();
-            return JSON.parse(clean);
-        } catch(e) {
-            console.warn('JSON parse error', e);
-            return null;
-        }
+        try { return JSON.parse(raw.replace(/```json|```/g, '').trim()); } catch(e) { return null; }
     }
-
-    // Questions 解析函數（兼容字串和陣列）
     function parseQuestions(raw) {
-        if (!raw) return [];
-        if (Array.isArray(raw)) return raw;
-        try {
-            const clean = raw.replace(/```json|```/g, '').trim();
-            const parsed = JSON.parse(clean);
-            return Array.isArray(parsed) ? parsed : [parsed];
-        } catch(e) {
-            console.warn('Questions parse error', e);
-            return [];
-        }
+        if (!raw) return []; if (Array.isArray(raw)) return raw;
+        try { const p = JSON.parse(raw.replace(/```json|```/g, '').trim()); return Array.isArray(p) ? p : [p]; } catch(e) { return []; }
     }
 
-    // 載入資料
+    // ─── Load CSV ───
     Papa.parse(CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
+        download: true, header: true, skipEmptyLines: true,
         complete: function(results) {
-            allData = results.data
-                .filter(r => r.JSON_Data && r.JSON_Data.trim())
-                .reverse(); // 最新的在前
-
+            allData = results.data.filter(r => r.JSON_Data && r.JSON_Data.trim()).reverse();
+            checkNewArticles();
+            updateWrongBadge();
             renderList();
         },
         error: function() {
-            document.getElementById('listView').innerHTML = `
-                <div class="error-box">
-                    ⚠️ 無法載入文章<br><br>
-                    請確認 CSV 網址是否正確，<br>以及 Google Sheets 是否已公開分享。
-                </div>`;
+            document.getElementById('listView').innerHTML = `<div class="error-box">⚠️ 無法載入文章<br><br>請確認 CSV 網址是否正確，<br>以及 Google Sheets 是否已公開分享。</div>`;
         }
     });
 
+    // ─── New Article Detection ───
+    function checkNewArticles() {
+        const prev = parseInt(localStorage.getItem(LS_SEEN) || '0');
+        const curr = allData.length;
+        if (curr > prev && prev > 0) {
+            const newest = allData[0];
+            const parsed = parseJsonData(newest.JSON_Data);
+            const title = parsed ? parsed.title : '新文章';
+            if (!getNtfyTopic()) {
+                if (!localStorage.getItem(LS_PUSH_DIS)) {
+                    document.getElementById('pushBannerWrap').style.display = 'block';
+                }
+            } else {
+                sendPush(title);
+            }
+        }
+        localStorage.setItem(LS_SEEN, curr);
+    }
+
+    // ─── Render List ───
     function renderList() {
         const list = document.getElementById('listView');
-
-        if (allData.length === 0) {
-            list.innerHTML = '<div class="empty-box">目前還沒有文章，請等 Make 自動執行後再回來。</div>';
-            return;
-        }
-
+        if (allData.length === 0) { list.innerHTML = '<div class="empty-box">NO ARTICLES YET<br>等待 Make 自動執行後再回來</div>'; return; }
+        const wrongData = loadWrong();
         const todayStr = today.toISOString().slice(0, 10);
         const todayArticle = allData.find(r => r.Date && r.Date.startsWith(todayStr));
         const pastArticles = allData.filter(r => !r.Date || !r.Date.startsWith(todayStr));
-
         let html = '';
-
-        // 今日文章
         if (todayArticle) {
             const td = parseJsonData(todayArticle.JSON_Data);
-            const tTitle = td ? td.title : '今日文章';
-            html += `
-                <div class="today-banner" onclick="openArticle(${allData.indexOf(todayArticle)})">
-                    <div class="today-tag">TODAY</div>
-                    <div class="today-title">${tTitle}</div>
-                    <div class="today-meta">${formatDate(todayArticle.Date)}</div>
-                    <div class="today-arrow">→</div>
-                </div>`;
+            html += `<div class="today-banner" onclick="openArticle(${allData.indexOf(todayArticle)})">
+                <span class="today-tag">TODAY · 今日文章</span>
+                <div class="today-title">${td ? td.title : '今日文章'}</div>
+                <div class="today-meta">${formatDate(todayArticle.Date)}</div>
+                <div class="today-arrow">→</div>
+            </div>`;
         }
-
-        // 過往文章
         if (pastArticles.length > 0) {
-            html += `<div class="section-header">過往文章</div>`;
-            const icons = ['📰','🌍','💼','🔬','🏥','✈️','🎯','💡','🌱'];
+            html += `<div class="section-header">ARCHIVE · 過往文章</div>`;
             pastArticles.forEach((item, i) => {
                 const idx = allData.indexOf(item);
                 const pd = parseJsonData(item.JSON_Data);
-                const pTitle = pd ? pd.title : '（無標題）';
-                html += `
-                    <div class="list-card" onclick="openArticle(${idx})">
-                        <div class="card-icon">${icons[i % icons.length]}</div>
-                        <div class="card-content">
-                            <div class="card-title">${pTitle}</div>
-                            <div class="card-date">${formatDate(item.Date)}</div>
-                        </div>
-                        <div class="card-arrow">›</div>
-                    </div>`;
+                const hasWrong = Object.keys(wrongData).some(k => k.startsWith(idx + '_'));
+                html += `<div class="list-card" onclick="openArticle(${idx})">
+                    <div class="card-num">${String(i + 1).padStart(2, '0')}</div>
+                    <div class="card-content">
+                        <div class="card-title">${pd ? pd.title : '（無標題）'}</div>
+                        <div class="card-date">${formatDate(item.Date)}</div>
+                    </div>
+                    ${hasWrong ? '<div class="card-wrong-dot" title="有錯題"></div>' : ''}
+                    <div class="card-arrow">›</div>
+                </div>`;
             });
         }
-
         list.innerHTML = html;
     }
 
+    // ─── Open Article ───
     function openArticle(idx) {
         const item = allData[idx];
-        currentArticle = item;
-        answered = false;
-
+        currentArticle = item; currentArticleIdx = idx; answered = false;
         const parsed = parseJsonData(item.JSON_Data);
         const title = parsed ? parsed.title : '';
-        const contentEn = parsed ? (parsed.contentEn || '') : '';
-        const contentZh = parsed ? (parsed.contentZh || '') : '';
         const questions = parsed ? parseQuestions(parsed.questions) : [];
 
-        // 填入內容
         document.getElementById('tDate').textContent = formatDate(item.Date);
         document.getElementById('tTitle').textContent = title;
-        document.getElementById('tEn').textContent = contentEn;
-        document.getElementById('tZh').textContent = contentZh;
+        document.getElementById('tEn').textContent = parsed ? (parsed.contentEn || '') : '';
+        document.getElementById('tZh').textContent = parsed ? (parsed.contentZh || '') : '';
         document.getElementById('tZh').style.display = 'none';
-        document.getElementById('toggleBtn').textContent = '🌐 顯示中文翻譯';
+        document.getElementById('toggleBtn').textContent = '[ SHOW 中文翻譯 ]';
 
-        // 渲染題目
         let qHtml = '';
         if (questions.length > 0) {
-            qHtml += `<div class="quiz-header">📝 閱讀測驗（${questions.length} 題）</div>`;
+            qHtml += `<div class="quiz-header">QUIZ · 閱讀測驗（${questions.length} 題）</div>`;
             questions.forEach((q, i) => {
-                qHtml += `<div class="quiz-card" id="qcard${i}">
-                    <div class="quiz-q">Q${i+1}. ${q.q}</div>`;
+                qHtml += `<div class="quiz-card" id="qcard${i}"><div class="quiz-q">Q${i+1}. ${q.q}</div>`;
                 q.options.forEach((opt, oi) => {
-                    const letter = String.fromCharCode(65 + oi);
-                    qHtml += `
-                        <label class="option-label" id="opt${i}_${oi}" onclick="selectOption(${i}, ${oi})">
-                            <input type="radio" name="q${i}" value="${oi}">
-                            <span class="option-letter">${letter}</span>
-                            <span>${opt}</span>
-                        </label>`;
+                    qHtml += `<label class="option-label" id="opt${i}_${oi}" onclick="selectOption(${i}, ${oi})">
+                        <input type="radio" name="q${i}" value="${oi}">
+                        <span class="option-letter">${String.fromCharCode(65+oi)}</span>
+                        <span>${opt}</span>
+                    </label>`;
                 });
                 qHtml += `<div class="feedback" id="fb${i}"></div></div>`;
             });
         }
-
         document.getElementById('qArea').innerHTML = qHtml;
         document.getElementById('scoreCard').style.display = 'none';
         document.getElementById('submitBtn').style.display = 'block';
         document.getElementById('submitBtn').disabled = false;
-        document.getElementById('submitBtn').textContent = '✏️ 提交答案並評分';
+        document.getElementById('submitBtn').textContent = 'SUBMIT ANSWERS →';
 
-        // 切換畫面
         document.getElementById('listView').style.display = 'none';
+        document.getElementById('wrongView').style.display = 'none';
         document.getElementById('readView').style.display = 'block';
         document.getElementById('backBtn').style.display = 'block';
+        document.getElementById('navTabs').style.display = 'none';
         window.scrollTo(0, 0);
     }
 
     function selectOption(qIdx, optIdx) {
         if (answered) return;
-        const q = document.querySelectorAll(`[id^="opt${qIdx}_"]`);
-        q.forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll(`[id^="opt${qIdx}_"]`).forEach(el => el.classList.remove('selected'));
         document.getElementById(`opt${qIdx}_${optIdx}`).classList.add('selected');
         document.querySelector(`input[name="q${qIdx}"][value="${optIdx}"]`).checked = true;
     }
 
     function toggleZh() {
-        const zh = document.getElementById('tZh');
-        const btn = document.getElementById('toggleBtn');
-        if (zh.style.display === 'none' || !zh.style.display) {
-            zh.style.display = 'block';
-            btn.textContent = '🙈 隱藏中文翻譯';
-        } else {
-            zh.style.display = 'none';
-            btn.textContent = '🌐 顯示中文翻譯';
-        }
+        const zh = document.getElementById('tZh'), btn = document.getElementById('toggleBtn');
+        const vis = zh.style.display === 'block';
+        zh.style.display = vis ? 'none' : 'block';
+        btn.textContent = vis ? '[ SHOW 中文翻譯 ]' : '[ HIDE 中文翻譯 ]';
     }
 
+    // ─── Check + Record Wrong ───
     function checkAnswers() {
-        if (answered) return;
-        answered = true;
-
+        if (answered) return; answered = true;
         const parsedCA = parseJsonData(currentArticle.JSON_Data);
         const questions = parsedCA ? parseQuestions(parsedCA.questions) : [];
-
+        const articleTitle = parsedCA ? parsedCA.title : '';
         let correct = 0;
 
         questions.forEach((q, i) => {
@@ -611,63 +814,84 @@
             const fb = document.getElementById('fb' + i);
             const userAns = sel ? parseInt(sel.value) : -1;
             const rightAns = q.ans;
-
-            // 標記所有選項
             q.options.forEach((_, oi) => {
                 const el = document.getElementById(`opt${i}_${oi}`);
-                if (oi === rightAns) {
-                    el.classList.add('correct');
-                    el.classList.remove('selected', 'wrong');
-                } else if (oi === userAns && userAns !== rightAns) {
-                    el.classList.add('wrong');
-                    el.classList.remove('selected');
-                }
+                if (oi === rightAns) { el.classList.add('correct'); el.classList.remove('selected', 'wrong'); }
+                else if (oi === userAns && userAns !== rightAns) { el.classList.add('wrong'); el.classList.remove('selected'); }
             });
-
-            // 顯示回饋
             fb.style.display = 'block';
             if (userAns === rightAns) {
                 correct++;
-                fb.className = 'feedback correct';
-                fb.textContent = '✓ 正確！';
-            } else if (userAns === -1) {
-                fb.className = 'feedback wrong';
-                fb.textContent = `✗ 未作答，正確答案是 (${String.fromCharCode(65 + rightAns)})`;
+                fb.className = 'feedback correct'; fb.textContent = '✓ CORRECT';
+                removeWrong(`${currentArticleIdx}_${i}`);
             } else {
                 fb.className = 'feedback wrong';
-                fb.textContent = `✗ 錯誤，正確答案是 (${String.fromCharCode(65 + rightAns)})`;
+                fb.textContent = userAns === -1 ? `✗ NO ANSWER  →  ${String.fromCharCode(65+rightAns)}` : `✗ WRONG  →  ${String.fromCharCode(65+rightAns)}`;
+                recordWrong(currentArticleIdx, articleTitle, i, q.q, q.options, userAns, rightAns);
             }
         });
 
-        // 顯示分數
-        const scoreCard = document.getElementById('scoreCard');
-        scoreCard.style.display = 'block';
+        const sc = document.getElementById('scoreCard');
+        sc.style.display = 'block';
         document.getElementById('scoreNum').textContent = `${correct} / ${questions.length}`;
-
         const pct = questions.length > 0 ? correct / questions.length : 0;
-        const msgs = ['繼續加油！💪', '不錯喔！再接再厲 👍', '表現很好！🌟', '滿分！太厲害了！🎉'];
-        document.getElementById('scoreMsg').textContent =
-            pct === 1 ? msgs[3] : pct >= 0.75 ? msgs[2] : pct >= 0.5 ? msgs[1] : msgs[0];
-
-        document.getElementById('submitBtn').textContent = '已評分完畢';
+        document.getElementById('scoreMsg').textContent = pct === 1 ? '全對！太厲害了 🎉' : pct >= 0.75 ? '表現很好 🌟' : pct >= 0.5 ? '不錯，再接再厲 👍' : '繼續加油 💪';
+        document.getElementById('submitBtn').textContent = 'SCORED  ✓';
         document.getElementById('submitBtn').disabled = true;
+        renderList();
+        sc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
-        scoreCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // ─── Wrong List ───
+    function renderWrongList() {
+        const data = loadWrong(), keys = Object.keys(data);
+        const container = document.getElementById('wrongList');
+        if (keys.length === 0) {
+            container.innerHTML = '<div class="wrong-empty">NO WRONG ANSWERS<br>目前沒有錯題記錄<br>繼續保持！</div>'; return;
+        }
+        const byArticle = {};
+        keys.forEach(k => {
+            const item = data[k]; const aid = item.articleIdx;
+            if (!byArticle[aid]) byArticle[aid] = { title: item.articleTitle, items: [] };
+            byArticle[aid].items.push({ key: k, ...item });
+        });
+        let html = '';
+        Object.values(byArticle).forEach(group => {
+            html += `<div class="wrong-article-group">
+                <div class="wrong-article-label">
+                    <span>${group.title || '（無標題）'}</span>
+                    <span class="wrong-count">${group.items.length} 題</span>
+                </div>`;
+            group.items.forEach(item => {
+                const ul = item.userAns >= 0 ? String.fromCharCode(65+item.userAns) : '—';
+                const rl = String.fromCharCode(65+item.correctAns);
+                html += `<div class="wrong-q-card" onclick="openArticle(${item.articleIdx})">
+                    <div class="wq-q">${item.qText}</div>
+                    <div class="wq-meta">
+                        <span class="wq-wrong">✗ 你答：${ul}</span>
+                        <span class="wq-right">✓ 正確：${rl}</span>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+        });
+        html += `<button class="clear-btn" onclick="if(confirm('確定清除所有錯題？')){clearAllWrong();renderWrongList();showToast('已清除所有錯題')}">清除所有錯題記錄</button>`;
+        container.innerHTML = html;
     }
 
     function goBack() {
         document.getElementById('readView').style.display = 'none';
-        document.getElementById('listView').style.display = 'block';
         document.getElementById('backBtn').style.display = 'none';
+        document.getElementById('navTabs').style.display = 'flex';
+        if (currentTab === 'wrong') { document.getElementById('wrongView').style.display = 'block'; renderWrongList(); }
+        else { document.getElementById('listView').style.display = 'block'; }
         window.scrollTo(0, 0);
     }
 
     function formatDate(dateStr) {
         if (!dateStr) return '';
-        try {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
-        } catch(e) { return dateStr; }
+        try { return new Date(dateStr).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }); }
+        catch(e) { return dateStr; }
     }
 </script>
 
