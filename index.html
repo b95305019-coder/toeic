@@ -428,6 +428,18 @@
     document.getElementById('headerDate').textContent =
         today.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
 
+    // JSON_Data 解析函數
+    function parseJsonData(raw) {
+        if (!raw) return null;
+        try {
+            const clean = raw.replace(/```json|```/g, '').trim();
+            return JSON.parse(clean);
+        } catch(e) {
+            console.warn('JSON parse error', e);
+            return null;
+        }
+    }
+
     // Questions 解析函數（兼容字串和陣列）
     function parseQuestions(raw) {
         if (!raw) return [];
