@@ -428,15 +428,17 @@
     document.getElementById('headerDate').textContent =
         today.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
 
-    // JSON_Data 解析函數
-    function parseJsonData(raw) {
-        if (!raw) return null;
+    // Questions 解析函數（兼容字串和陣列）
+    function parseQuestions(raw) {
+        if (!raw) return [];
+        if (Array.isArray(raw)) return raw;
         try {
             const clean = raw.replace(/```json|```/g, '').trim();
-            return JSON.parse(clean);
+            const parsed = JSON.parse(clean);
+            return Array.isArray(parsed) ? parsed : [parsed];
         } catch(e) {
-            console.warn('JSON parse error', e);
-            return null;
+            console.warn('Questions parse error', e);
+            return [];
         }
     }
 
@@ -447,7 +449,7 @@
         skipEmptyLines: true,
         complete: function(results) {
             allData = results.data
-                .filter(r => r.JSON_Data && r.JSON_Data.trim())
+                .filter(r => r.Title && r.Title.trim())
                 .reverse(); // 最新的在前
 
             renderList();
@@ -477,12 +479,10 @@
 
         // 今日文章
         if (todayArticle) {
-            const d = parseJsonData(todayArticle.JSON_Data);
-            const title = d ? d.title : '今日文章';
             html += `
                 <div class="today-banner" onclick="openArticle(${allData.indexOf(todayArticle)})">
                     <div class="today-tag">TODAY</div>
-                    <div class="today-title">${title}</div>
+                    <div class="today-title">${todayArticle.Title || '今日文章'}</div>
                     <div class="today-meta">${formatDate(todayArticle.Date)}</div>
                     <div class="today-arrow">→</div>
                 </div>`;
@@ -494,13 +494,11 @@
             const icons = ['📰','🌍','💼','🔬','🏥','✈️','🎯','💡','🌱'];
             pastArticles.forEach((item, i) => {
                 const idx = allData.indexOf(item);
-                const d = parseJsonData(item.JSON_Data);
-                const title = d ? d.title : '（無標題）';
                 html += `
                     <div class="list-card" onclick="openArticle(${idx})">
                         <div class="card-icon">${icons[i % icons.length]}</div>
                         <div class="card-content">
-                            <div class="card-title">${title}</div>
+                            <div class="card-title">${item.Title || '（無標題）'}</div>
                             <div class="card-date">${formatDate(item.Date)}</div>
                         </div>
                         <div class="card-arrow">›</div>
@@ -513,14 +511,13 @@
 
     function openArticle(idx) {
         const item = allData[idx];
-        const parsed = parseJsonData(item.JSON_Data);
-        currentArticle = { raw: item, parsed: parsed };
+        currentArticle = item;
         answered = false;
 
-        const title = parsed ? parsed.title : '';
-        const contentEn = parsed ? (parsed.contentEn || '') : '';
-        const contentZh = parsed ? (parsed.contentZh || '') : '';
-        const questions = parsed && Array.isArray(parsed.questions) ? parsed.questions : [];
+        const title = item.Title || '';
+        const contentEn = item.ContentEn || '';
+        const contentZh = item.ContentZh || '';
+        const questions = parseQuestions(item.Questions);
 
         // 填入內容
         document.getElementById('tDate').textContent = formatDate(item.Date);
@@ -587,8 +584,7 @@
         if (answered) return;
         answered = true;
 
-        const questions = currentArticle.parsed && Array.isArray(currentArticle.parsed.questions)
-            ? currentArticle.parsed.questions : [];
+        const questions = parseQuestions(currentArticle.Questions);
 
         let correct = 0;
 
