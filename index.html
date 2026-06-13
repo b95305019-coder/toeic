@@ -517,7 +517,8 @@
 </header>
 
 <div class="nav-tabs" id="navTabs">
-    <div class="nav-tab active" onclick="switchTab('list')" id="tabList">文章列表</div>
+    <div class="nav-tab active" onclick="switchTab('list')" id="tabList">文章列表 <span class="nav-badge" id="listBadge" style="display:none">0</span></div>
+    <div class="nav-tab" onclick="switchTab('passed')" id="tabPassed">已完成 <span class="nav-badge" id="passedBadge" style="display:none">0</span></div>
     <div class="nav-tab" onclick="switchTab('wrong')" id="tabWrong">錯題本 <span class="nav-badge" id="wrongBadge" style="display:none">0</span></div>
 </div>
 
@@ -572,6 +573,11 @@
         <button class="submit-btn" id="submitBtn" onclick="checkAnswers()">SUBMIT ANSWERS →</button>
     </div>
 
+    <!-- 已完成 -->
+    <div id="passedView">
+        <div id="passedList"></div>
+    </div>
+
     <!-- 錯題本 -->
     <div id="wrongView">
         <div id="wrongList"></div>
@@ -586,7 +592,7 @@
 
     let allData = [], currentArticle = null, currentArticleIdx = null, answered = false, currentTab = 'list';
 
-    const LS_WRONG = 'toeic_wrong_v1', LS_SEEN = 'toeic_seen_count', LS_NTFY = 'toeic_ntfy_topic', LS_PUSH_DIS = 'toeic_push_dismissed';
+    const LS_WRONG = 'toeic_wrong_v1', LS_SEEN = 'toeic_seen_count', LS_NTFY = 'toeic_ntfy_topic', LS_PUSH_DIS = 'toeic_push_dismissed', LS_PASSED = 'toeic_passed_v1';
 
     // ─── Wrong Answer Store ───
     function loadWrong() { try { return JSON.parse(localStorage.getItem(LS_WRONG) || '{}'); } catch(e) { return {}; } }
@@ -601,6 +607,20 @@
     function updateWrongBadge() {
         const n = Object.keys(loadWrong()).length;
         const b = document.getElementById('wrongBadge');
+        b.textContent = n; b.style.display = n > 0 ? '' : 'none';
+    }
+
+    // ─── Passed Test Store ───
+    function loadPassed() { try { return JSON.parse(localStorage.getItem(LS_PASSED) || '{}'); } catch(e) { return {}; } }
+    function savePassed(d) { localStorage.setItem(LS_PASSED, JSON.stringify(d)); }
+    function recordPassed(articleIdx, articleTitle, score, total) {
+        const d = loadPassed();
+        d[articleIdx] = { articleIdx, articleTitle, score, total, date: new Date().toISOString() };
+        savePassed(d); updatePassedBadge();
+    }
+    function updatePassedBadge() {
+        const n = Object.keys(loadPassed()).length;
+        const b = document.getElementById('passedBadge');
         b.textContent = n; b.style.display = n > 0 ? '' : 'none';
     }
 
@@ -648,12 +668,15 @@
     function switchTab(tab) {
         currentTab = tab;
         document.getElementById('tabList').classList.toggle('active', tab === 'list');
+        document.getElementById('tabPassed').classList.toggle('active', tab === 'passed');
         document.getElementById('tabWrong').classList.toggle('active', tab === 'wrong');
         document.getElementById('listView').style.display = tab === 'list' ? 'block' : 'none';
+        document.getElementById('passedView').style.display = tab === 'passed' ? 'block' : 'none';
         document.getElementById('wrongView').style.display = tab === 'wrong' ? 'block' : 'none';
         document.getElementById('readView').style.display = 'none';
         document.getElementById('backBtn').style.display = 'none';
         document.getElementById('navTabs').style.display = 'flex';
+        if (tab === 'passed') renderPassedList();
         if (tab === 'wrong') renderWrongList();
         window.scrollTo(0, 0);
     }
@@ -686,6 +709,7 @@
         }).reverse();
             checkNewArticles();
             updateWrongBadge();
+            updatePassedBadge();
             renderList();
         },
         error: function() {
@@ -717,6 +741,7 @@
         const list = document.getElementById('listView');
         if (allData.length === 0) { list.innerHTML = '<div class="empty-box">NO ARTICLES YET<br>等待 Make 自動執行後再回來</div>'; return; }
         const wrongData = loadWrong();
+        const passedData = loadPassed();
         const todayStr = today.toISOString().slice(0, 10);
         const todayArticles = allData.filter(r => r.Date && r.Date.startsWith(todayStr));
         const pastArticles = allData.filter(r => !r.Date || !r.Date.startsWith(todayStr));
@@ -738,13 +763,15 @@
                 const idx = allData.indexOf(item);
                 const pd = parseJsonData(item.JSON_Data);
                 const hasWrong = Object.keys(wrongData).some(k => k.startsWith(idx + '_'));
+                const isPassed = passedData[idx];
                 html += `<div class="list-card" onclick="openArticle(${idx})">
                     <div class="card-num">${String(i + 1).padStart(2, '0')}</div>
                     <div class="card-content">
                         <div class="card-title">${pd ? pd.title : '（無標題）'}</div>
                         <div class="card-date">${formatDate(item.Date)}</div>
                     </div>
-                    ${hasWrong ? '<div class="card-wrong-dot" title="有錯題"></div>' : ''}
+                    ${isPassed ? `<div style="color:var(--green);font-size:12px;font-weight:600;flex-shrink:0;" title="已完成">✓ ${isPassed.score}/${isPassed.total}</div>` : ''}
+                    ${hasWrong && !isPassed ? '<div class="card-wrong-dot" title="有錯題"></div>' : ''}
                     <div class="card-arrow">›</div>
                 </div>`;
             });
@@ -852,8 +879,46 @@
         document.getElementById('scoreMsg').textContent = pct === 1 ? '全對！太厲害了 🎉' : pct >= 0.75 ? '表現很好 🌟' : pct >= 0.5 ? '不錯，再接再厲 👍' : '繼續加油 💪';
         document.getElementById('submitBtn').textContent = 'SCORED  ✓';
         document.getElementById('submitBtn').disabled = true;
+        
+        // 記錄已完成的測驗（≥ 75%）
+        if (pct >= 0.75) {
+            recordPassed(currentArticleIdx, articleTitle, correct, questions.length);
+        }
+        
         renderList();
         sc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // ─── Passed List ───
+    function renderPassedList() {
+        const data = loadPassed(), keys = Object.keys(data);
+        const container = document.getElementById('passedList');
+        if (keys.length === 0) {
+            container.innerHTML = '<div class="wrong-empty">NO COMPLETED TESTS<br>目前還沒有已完成的測驗<br>加油，趕快完成第一個！</div>'; return;
+        }
+        let html = '';
+        keys.forEach((key, i) => {
+            const item = data[key];
+            const idx = parseInt(key);
+            const article = allData[idx];
+            const ad = article ? parseJsonData(article.JSON_Data) : null;
+            const title = ad ? ad.title : item.articleTitle || '（無標題）';
+            const score = item.score, total = item.total;
+            const pct = total > 0 ? (score / total * 100).toFixed(0) : 0;
+            html += `<div class="wrong-article-group">
+                <div class="wrong-article-label">
+                    <span>${title}</span>
+                    <span style="color:var(--green);font-weight:600;">${score} / ${total} (${pct}%)</span>
+                </div>
+                <div class="wrong-q-card" onclick="openArticle(${idx})" style="cursor:pointer;background:var(--green-dim);">
+                    <div class="wq-q" style="color:var(--green);">✓ 已完成於 ${new Date(item.date).toLocaleDateString('zh-TW')}</div>
+                    <div class="wq-meta">
+                        <span style="color:var(--green);">點擊重新練習</span>
+                    </div>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
     }
 
     // ─── Wrong List ───
@@ -897,7 +962,8 @@
         document.getElementById('readView').style.display = 'none';
         document.getElementById('backBtn').style.display = 'none';
         document.getElementById('navTabs').style.display = 'flex';
-        if (currentTab === 'wrong') { document.getElementById('wrongView').style.display = 'block'; renderWrongList(); }
+        if (currentTab === 'passed') { document.getElementById('passedView').style.display = 'block'; renderPassedList(); }
+        else if (currentTab === 'wrong') { document.getElementById('wrongView').style.display = 'block'; renderWrongList(); }
         else { document.getElementById('listView').style.display = 'block'; }
         window.scrollTo(0, 0);
     }
