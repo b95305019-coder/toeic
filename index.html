@@ -615,7 +615,9 @@
     function savePassed(d) { localStorage.setItem(LS_PASSED, JSON.stringify(d)); }
     function recordPassed(articleIdx, articleTitle, score, total) {
         const d = loadPassed();
-        d[articleIdx] = { articleIdx, articleTitle, score, total, date: new Date().toISOString() };
+        // 用標題當 key，這樣文章順序改變也不會丟失記錄
+        const key = articleTitle || String(articleIdx);
+        d[key] = { articleTitle: key, score, total, date: new Date().toISOString() };
         savePassed(d); updatePassedBadge();
     }
     function updatePassedBadge() {
@@ -763,7 +765,7 @@
                 const idx = allData.indexOf(item);
                 const pd = parseJsonData(item.JSON_Data);
                 const hasWrong = Object.keys(wrongData).some(k => k.startsWith(idx + '_'));
-                const isPassed = passedData[idx];
+                const isPassed = pd ? passedData[pd.title] : null;
                 html += `<div class="list-card" onclick="openArticle(${idx})">
                     <div class="card-num">${String(i + 1).padStart(2, '0')}</div>
                     <div class="card-content">
@@ -896,24 +898,29 @@
         if (keys.length === 0) {
             container.innerHTML = '<div class="wrong-empty">NO COMPLETED TESTS<br>目前還沒有已完成的測驗<br>加油，趕快完成第一個！</div>'; return;
         }
+        // 依完成日期排序（最新在前）
+        keys.sort((a, b) => new Date(data[b].date) - new Date(data[a].date));
         let html = '';
-        keys.forEach((key, i) => {
+        keys.forEach(key => {
             const item = data[key];
-            const idx = parseInt(key);
-            const article = allData[idx];
-            const ad = article ? parseJsonData(article.JSON_Data) : null;
-            const title = ad ? ad.title : item.articleTitle || '（無標題）';
+            const title = item.articleTitle || key;
             const score = item.score, total = item.total;
             const pct = total > 0 ? (score / total * 100).toFixed(0) : 0;
+            // 用標題找到對應的文章 index（新文章加入後仍能對應）
+            const articleIdx = allData.findIndex(r => {
+                const pd = parseJsonData(r.JSON_Data);
+                return pd && pd.title === title;
+            });
+            const clickable = articleIdx >= 0;
             html += `<div class="wrong-article-group">
                 <div class="wrong-article-label">
                     <span>${title}</span>
                     <span style="color:var(--green);font-weight:600;">${score} / ${total} (${pct}%)</span>
                 </div>
-                <div class="wrong-q-card" onclick="openArticle(${idx})" style="cursor:pointer;background:var(--green-dim);">
+                <div class="wrong-q-card" ${clickable ? `onclick="openArticle(${articleIdx})"` : ''} style="cursor:${clickable ? 'pointer' : 'default'};background:var(--green-dim);">
                     <div class="wq-q" style="color:var(--green);">✓ 已完成於 ${new Date(item.date).toLocaleDateString('zh-TW')}</div>
                     <div class="wq-meta">
-                        <span style="color:var(--green);">點擊重新練習</span>
+                        <span style="color:var(--green);">${clickable ? '點擊重新練習' : '文章已從列表移除'}</span>
                     </div>
                 </div>
             </div>`;
