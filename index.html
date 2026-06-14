@@ -590,6 +590,14 @@
 <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6vOFyYzdLDMdFUwHR-z6LvCdrHDOeTKQEPOl6lCia0SG2Wn6pkSLRJtexSthC8TPOjCl-IWwPHk7O/pub?output=csv';
 
+    // ── 已完成記錄同步設定 ──────────────────────────────
+    // 請把 passed_records 工作表發布為 CSV 後填入這裡
+    // 格式：https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=YYYY&single=true&output=csv
+    const PASSED_CSV_URL = '';  // ← 填入 passed_records 工作表的 CSV 網址
+    // 請填入 Make Webhook 網址（用來寫入完成記錄）
+    const PASSED_WEBHOOK_URL = '';  // ← 填入 Make Webhook 網址
+    // ───────────────────────────────────────────────────
+
     let allData = [], currentArticle = null, currentArticleIdx = null, answered = false, currentTab = 'list';
 
     const LS_WRONG = 'toeic_wrong_v1', LS_SEEN = 'toeic_seen_count', LS_NTFY = 'toeic_ntfy_topic', LS_PUSH_DIS = 'toeic_push_dismissed', LS_PASSED = 'toeic_passed_v1';
@@ -613,12 +621,61 @@
     // ─── Passed Test Store ───
     function loadPassed() { try { return JSON.parse(localStorage.getItem(LS_PASSED) || '{}'); } catch(e) { return {}; } }
     function savePassed(d) { localStorage.setItem(LS_PASSED, JSON.stringify(d)); }
+
+    // 從 Google Sheets 載入已完成記錄，合併到 localStorage
+    async function syncPassedFromSheets() {
+        if (!PASSED_CSV_URL) return;
+        try {
+            const res = await fetch(PASSED_CSV_URL + '&t=' + Date.now());
+            const text = await res.text();
+            const rows = text.trim().split('\n').slice(1); // 跳過 header
+            const remote = {};
+            rows.forEach(row => {
+                // 欄位：title, score, total, date
+                const cols = row.split(',');
+                if (cols.length < 4) return;
+                const title = cols[0].replace(/^"|"$/g, '').trim();
+                const score = parseInt(cols[1]);
+                const total = parseInt(cols[2]);
+                const date  = cols[3].replace(/^"|"$/g, '').trim();
+                if (title) remote[title] = { articleTitle: title, score, total, date };
+            });
+            // 合併：remote 優先（跨裝置），但 local 若有更新日期更新的保留
+            const local = loadPassed();
+            Object.keys(remote).forEach(k => {
+                if (!local[k] || new Date(remote[k].date) >= new Date(local[k].date)) {
+                    local[k] = remote[k];
+                }
+            });
+            savePassed(local);
+            updatePassedBadge();
+        } catch(e) {
+            console.warn('syncPassedFromSheets failed:', e);
+        }
+    }
+
+    // 寫入到 Make Webhook → Google Sheets
+    async function pushPassedToSheets(title, score, total, date) {
+        if (!PASSED_WEBHOOK_URL) return;
+        try {
+            await fetch(PASSED_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, score, total, date })
+            });
+        } catch(e) {
+            console.warn('pushPassedToSheets failed:', e);
+        }
+    }
+
     function recordPassed(articleIdx, articleTitle, score, total) {
         const d = loadPassed();
-        // 用標題當 key，這樣文章順序改變也不會丟失記錄
         const key = articleTitle || String(articleIdx);
-        d[key] = { articleTitle: key, score, total, date: new Date().toISOString() };
+        const date = new Date().toISOString();
+        d[key] = { articleTitle: key, score, total, date };
         savePassed(d); updatePassedBadge();
+        // 同步到 Google Sheets（非同步，失敗不影響本地）
+        pushPassedToSheets(key, score, total, date);
     }
     function updatePassedBadge() {
         const n = Object.keys(loadPassed()).length;
@@ -713,6 +770,8 @@
             updateWrongBadge();
             updatePassedBadge();
             renderList();
+            // 從 Sheets 同步已完成記錄（跨裝置）
+            syncPassedFromSheets().then(() => renderList());
         },
         error: function() {
             document.getElementById('listView').innerHTML = `<div class="error-box">⚠️ 無法載入文章<br><br>請確認 CSV 網址是否正確，<br>以及 Google Sheets 是否已公開分享。</div>`;
