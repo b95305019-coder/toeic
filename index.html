@@ -593,9 +593,8 @@
     // ── 已完成記錄同步設定 ──────────────────────────────
     // 請把 passed_records 工作表發布為 CSV 後填入這裡
     // 格式：https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=YYYY&single=true&output=csv
-    const PASSED_CSV_URL = '';  // ← 填入 passed_records 工作表的 CSV 網址
-    // 請填入 Make Webhook 網址（用來寫入完成記錄）
-    const PASSED_WEBHOOK_URL = '';  // ← 填入 Make Webhook 網址
+    const PASSED_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6vOFyYzdLDMdFUwHR-z6LvCdrHDOeTKQEPOl6lCia0SG2Wn6pkSLRJtexSthC8TPOjCl-IWwPHk7O/pub?gid=1897249026&single=true&output=csv';
+    const PASSED_WEBHOOK_URL = 'https://hook.us2.make.com/5r4930403jqh4dy6s5b4qztbmloe0n1x';
     // ───────────────────────────────────────────────────
 
     let allData = [], currentArticle = null, currentArticleIdx = null, answered = false, currentTab = 'list';
